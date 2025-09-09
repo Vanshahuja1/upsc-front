@@ -1,0 +1,277 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: var(--font-poppins), system-ui, sans-serif;
+  }
+}
+
+:root {
+  --red: #c1151b;
+  --swiper-theme-color: #c1151b !important;
+  --swiper-pagination-color: #c1151b !important;
+}
+
+.flex-center {
+  @apply flex items-center justify-center;
+}
+
+.screen {
+  @apply container mx-auto;
+}
+
+/******************************************** Headings  ************************************************/
+
+.heroHeading {
+  @apply text-2xl sm:text-2xl  md:text-3xl mdl:text-4xl lg:text-4xl xl:text-5xl font-bold;
+  @apply leading-tight sm:leading-tight md:leading-tight mdl:leading-tight lg:leading-tight;
+}
+
+.heading {
+  font-size: clamp(1.5rem, 3vw, 6rem);
+  line-height: clamp(2.4rem, 3.5vw, 7.2rem); /* 1.2x the font size */
+  font-weight: bold;
+}
+.heading2 {
+  font-size: clamp(1.7rem, 2.5vw, 5.2rem);
+  line-height: clamp(
+    1.2rem,
+    2.5vw,
+    2.4rem
+  ); /* Reduced line height to match smaller font */
+  font-weight: bold;
+}
+
+/******************************************** Paddings  ************************************************/
+/* .padding-top {
+  @apply pt-[100px] sm:pt-[120px] md:pt-[150px] lg:pt-[180px] xl:pt-[200px];
+}
+.padding-bottom {
+  @apply pb-[100px] sm:pb-[120px] md:pb-[150px] lg:pb-[180px] xl:pb-[200px];
+}
+.padding-y {
+  @apply py-[100px] sm:py-[120px] md:py-[150px] lg:py-[180px] xl:py-[200px];
+}
+.common-space-y {
+  @apply space-y-3 sm:space-y-4 md:space-y-5;
+}
+
+*/
+
+.padding-x {
+  @apply px-4 sm:px-5 md:px-6 lg:px-8;
+}
+
+.padding-top {
+  @apply pt-[50px] sm:pt-[70px] md:pt-[90px] lg:pt-[100px] xl:pt-[110px];
+}
+
+.padding-bottom {
+  @apply pb-[50px] sm:pb-[70px] md:pb-[90px] lg:pb-[100px] xl:pb-[110px];
+}
+
+.padding-y {
+  @apply py-[50px] sm:py-[70px] md:py-[90px] lg:py-[100px] xl:py-[110px];
+}
+
+.padding-tx {
+  @apply pt-[100px] sm:pt-[70px] md:pt-[90px] lg:pt-[100px] xl:pt-[110px] px-4 sm:px-5 md:px-6 lg:px-8;
+}
+
+.padding-bx {
+  @apply pb-[100px] sm:pb-[70px] md:pb-[90px] lg:pb-[100px] xl:pb-[110px] px-4 sm:px-5 md:px-6 lg:px-8;
+}
+
+.padding-yx {
+  @apply py-[50px] sm:py-[70px] md:py-[90px] lg:py-[100px] xl:py-[110px]  px-4 sm:px-5 md:px-6 lg:px-8;
+}
+
+/******************************************** Swiper JS Start  ************************************************/
+
+.swiper-button-prev {
+  background-color: white;
+  padding: 30px 30px;
+  border-radius: 50%;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+.swiper-button-prev::after {
+  font-size: 20px !important;
+  color: black;
+}
+.swiper-button-next {
+  background-color: white;
+  padding: 30px 30px;
+  border-radius: 50%;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+.swiper-button-next::after {
+  font-size: 20px !important;
+  color: black;
+}
+
+/******************************************** Box Shadows ************************************************/
+
+.shadow-front {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-front-strong {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-front-soft {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-front-glow {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.shadow-front-colored {
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.2),
+    0 4px 6px -2px rgba(239, 68, 68, 0.1);
+}
+
+.swiper-pagination-bullet {
+  background-color: #cccccc;
+  opacity: 0.5;
+}
+
+.swiper-pagination-bullet-active {
+  background-color: #c1151b !important;
+  opacity: 1;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 100vh;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1151b;
+  border-radius: 100vh;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c1151b;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c1151b #f1f1f1;
+}
+
+/* ************************************************* Headings ****************************************************/
+
+.common-subHeading {
+  font-size: clamp(32px, 4vw, 76px);
+}
+
+/* Add these styles to your globals.css */
+
+/* For webkit browsers (Chrome, Safari, etc.) */
+::selection {
+  background: #c1151b;
+  color: white;
+}
+
+/* For Firefox */
+::-moz-selection {
+  background: #c1151b;
+  color: white;
+}
+
+.flex-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.heading-space {
+  @apply space-y-12 max-sm:space-y-8;
+}
+
+.absolute-center {
+  @apply top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2;
+}
+
+.grid-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-8;
+}
+
+.triangle {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 20px solid red; /* Color of the triangle */
+}
+
+#file {
+  fill: #ffffff !important;
+}
+
+.box {
+  height: 30vh;
+  width: 100%;
+  background-color: #f8e7d9;
+  clip-path: polygon(0% 0%, 100% 40%, 100% 100%, 0% 100%); /* Fallback */
+
+  @apply rounded-tl-[50px]  rounded-br-[50px] rounded-bl-[50px];
+}
+
+.glass-effect {
+  background-color: rgba(235, 235, 235, 0.2);
+  backdrop-filter: blur(20px);
+}
+
+.blog-content h1 {
+  @apply text-4xl mt-4 font-bold text-primaryred;
+}
+.blog-content h2 {
+  @apply text-3xl mt-4 font-semibold text-primaryred;
+}
+.blog-content h3 {
+  @apply text-xl md:text-2xl font-semibold text-gray-800;
+}
+.blog-content h4 {
+  @apply text-xl md:text-2xl font-semibold text-gray-800;
+}
+
+.blog-content b {
+  @apply font-bold;
+}
+.blog-content p {
+  @apply py-2;
+}
+
+/* Custom styling for list items with checkmarks */
+.blog-content ul {
+  @apply space-y-3;
+}
+
+.blog-content ul li {
+  @apply flex items-start gap-2;
+}
+
+.blog-content ul li::before {
+  content: "✓";
+  @apply h-6 w-6 flex-shrink-0 flex items-center justify-center rounded-full bg-[#FF7B07] text-white;
+}
+
+.blog-content ul li p {
+  @apply text-gray-700;
+}
