@@ -43,6 +43,7 @@ const Header = () => {
   const [isLogIn, setIsLogIn] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const path = usePathname();
   const { courses } = useCartStore();
   const [apiData, setApiData] = useState<OrganizationInfo>();
@@ -60,7 +61,7 @@ const Header = () => {
   const checkAuthStatus = async () => {
     try {
       setAuthLoading(true);
-      const token = localStorage.getItem('token'); // or however you store your token
+      const token = localStorage.getItem('token');
       
       const response = await fetch('/api/auth/check-status', {
         method: 'GET',
@@ -89,22 +90,38 @@ const Header = () => {
     setIsMenuOpen((open) => !open);
   };
 
-  // Scroll handler: hides header if scrolling down, shows if scrolling up (or near top)
+  // Improved scroll handler with debouncing and smoother logic
   const handleScroll = useCallback(() => {
     if (typeof window === "undefined") return;
 
-    const scrollY = window.scrollY;
-    const delta = scrollY - lastScrollY;
-
-    // If user scrolled down more than 5px and passed 100px, hide header.
-    // If user scrolled up more than 5px OR is near top, show header.
-    if (scrollY > 100 && delta > 5) {
-      setHeaderVisible(false);
-    } else if (delta < -5 || scrollY < 100) {
-      setHeaderVisible(true);
+    // Clear existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
 
-    setLastScrollY(scrollY);
+    // Debounce scroll events
+    scrollTimeoutRef.current = setTimeout(() => {
+      const scrollY = window.scrollY;
+      const delta = scrollY - lastScrollY;
+      const threshold = 10; // Increased threshold to reduce sensitivity
+
+      // More stable logic for showing/hiding header
+      if (scrollY < 50) {
+        // Always show header when near top
+        setHeaderVisible(true);
+      } else if (Math.abs(delta) > threshold) {
+        // Only change state if scroll delta is significant
+        if (delta > 0 && scrollY > 150) {
+          // Scrolling down and past threshold
+          setHeaderVisible(false);
+        } else if (delta < 0) {
+          // Scrolling up
+          setHeaderVisible(true);
+        }
+      }
+
+      setLastScrollY(scrollY);
+    }, 10); // Small delay to debounce
   }, [lastScrollY]);
 
   // Fetch organization info + add/remove scroll listener + check auth
@@ -116,9 +133,15 @@ const Header = () => {
     load();
     checkAuthStatus();
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Add scroll listener with passive option
+    const scrollHandler = handleScroll;
+    window.addEventListener("scroll", scrollHandler, { passive: true });
+    
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("scroll", scrollHandler);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
     };
   }, [handleScroll]);
 
@@ -147,7 +170,7 @@ const Header = () => {
 
   return (
     <header className="z-50 sticky top-0">
-      {/* RED TOP BAR: hide/show via translate-y */}
+      {/* RED TOP BAR: Improved transform with will-change for better performance */}
       {(apiData?.phones?.[0]?.number ||
         apiData?.emails?.[0]?.email ||
         apiData?.social_media?.facebook_link ||
@@ -159,9 +182,14 @@ const Header = () => {
           className={`
             header-top
             bg-primaryred text-white py-[8px]
-            transform transition-transform duration-300 ease-in-out
+            will-change-transform
+            transform transition-transform duration-500 ease-out
             ${headerVisible ? "translate-y-0" : "-translate-y-full"}
           `}
+          style={{
+            backfaceVisibility: 'hidden',
+            perspective: '1000px'
+          }}
         >
           <div className="bg-primaryred sm:space-x-3 flex justify-between items-center screen padding-x">
             <div className="hidden sm:block">
@@ -238,20 +266,26 @@ const Header = () => {
         </div>
       )}
 
-      {/* WHITE MAIN HEADER: also hide/show via translate-y */}
+      {/* WHITE MAIN HEADER: Improved transform with better performance */}
       <div
         className={`
-          desktop-heading bg-white relative transition-transform duration-300 ease-in-out
+          desktop-heading bg-white relative
+          will-change-transform
+          transition-transform duration-500 ease-out
           ${
             headerVisible
               ? "translate-y-0"
-              : "-translate-y-[45%] lg:-translate-y-[45%]"
+              : "-translate-y-full"
           }
         `}
+        style={{
+          backfaceVisibility: 'hidden',
+          perspective: '1000px'
+        }}
       >
         <div className="screen py-2 flex items-center justify-between padding-x">
           {/* Logo */}
-          <div className="w-52">
+          <div className="w-52 flex-shrink-0">
             <Link href="/">
               <Image
                 src={apiData?.logo_url || "/logo.png"}
@@ -259,20 +293,21 @@ const Header = () => {
                 width={220}
                 height={180}
                 className="w-full h-full object-cover"
+                priority
               />
             </Link>
           </div>
 
-          {/* Desktop navigation */}
-          <nav>
+          {/* Desktop navigation - Added flex-shrink-0 to prevent compression */}
+          <nav className="flex-shrink-0">
             <ul className="xl:flex gap-x-10 hidden">
               {navItems.map((item, index) => {
                 const isActive = path === item.href;
                 return (
-                  <li key={index} className="group relative cursor-pointer">
+                  <li key={index} className="group relative cursor-pointer flex-shrink-0">
                     <a
                       href={item.href}
-                      className={`relative z-50 ${
+                      className={`relative z-50 whitespace-nowrap ${
                         isActive
                           ? "text-primaryred font-bold"
                           : "group-hover:text-primaryred"
@@ -281,7 +316,7 @@ const Header = () => {
                       {item.label}
                     </a>
                     {isActive && (
-                      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-16 w-16">
+                      <div className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 h-16 w-16 pointer-events-none">
                         <Image
                           src="/images/icons/button-style.svg"
                           alt="style-1"
@@ -298,14 +333,14 @@ const Header = () => {
           </nav>
 
           {/* Buttons - Show different content based on auth status */}
-          <div className="hidden xl:flex xl:items-center space-x-5">
+          <div className="hidden xl:flex xl:items-center space-x-5 flex-shrink-0">
             {!authLoading && (
               <>
                 {isLogIn ? (
                   // Show cart when logged in
                   <Link
                     href={"/cart"}
-                    className="h-12 w-12 p-3 bg-[#FF7B07]/20 group hover:bg-primaryred duration-300 ease-in-out rounded-full flex-center relative cursor-pointer"
+                    className="h-12 w-12 p-3 bg-[#FF7B07]/20 group hover:bg-primaryred duration-300 ease-in-out rounded-full flex-center relative cursor-pointer flex-shrink-0"
                   >
                     <BagIcon className="h-7 w-7 text-black group-hover:text-white duration-300 ease-in-out" />
                     <div className="h-5 w-5 text-white absolute bg-[#DC8940] top-1 rounded-full right-0 text-sm flex items-center justify-center">
@@ -316,7 +351,7 @@ const Header = () => {
                   // Show login button when not logged in
                   <Button
                     href="/auth/login"
-                    className="!py-3 !px-8 hover:bg-primaryred !text-white"
+                    className="!py-3 !px-8 hover:bg-primaryred !text-white whitespace-nowrap flex-shrink-0"
                   >
                     Login
                   </Button>
@@ -326,7 +361,7 @@ const Header = () => {
           </div>
 
           {/* Mobile menu toggle */}
-          <div className="xl:hidden">
+          <div className="xl:hidden flex-shrink-0">
             <button
               onClick={toggleMenu}
               className="text-primaryred p-2 focus:outline-none"

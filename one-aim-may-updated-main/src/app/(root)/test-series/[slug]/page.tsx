@@ -193,7 +193,7 @@ export default async function TestSeriesDetail({
                   (data, i) => data.name
                 )}
                 slug={testSeiesData.slug}
-                type="test-series"
+                type="test_series"
                 duration={testSeiesData?.duration}
                 question={testSeiesData?.questions_count}
                 videoLacture={testSeiesData?.video_lectures}

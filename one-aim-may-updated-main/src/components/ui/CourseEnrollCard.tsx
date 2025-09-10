@@ -17,7 +17,7 @@ import { toast } from "react-toastify";
 import { CartStore } from "@/types";
 
 interface CourseEnrollCardProps {
-  type: string;
+  type: 'course' | 'test_series'; // Changed from string to specific union type
   heading: string;
   instructors: string[];
   price: number;

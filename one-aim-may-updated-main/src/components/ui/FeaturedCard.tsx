@@ -129,7 +129,7 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
       toast.info("Please login to add items to cart");
       // Store current URL to redirect back after login
       localStorage.setItem('redirectAfterLogin', window.location.pathname);
-      router.push('/login');
+      router.push('/auth/login');
       return;
     }
 
@@ -155,9 +155,12 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
       });
 
       if (response.ok) {
+        // Ensure type is properly cast to CartStore type
+        const courseType: 'course' | 'test_series' = testSeries ? 'test_series' : 'course';
+        
         // Also add to local cart store for UI updates
         const cartStore: CartStore = {
-          type: type,
+          type: courseType, // Use the properly typed variable
           slug: slug,
           heading: heading,
           faculty: Array.isArray(faculties) ? faculties.map((data) => data.name) : [],

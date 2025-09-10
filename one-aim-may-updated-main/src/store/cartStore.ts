@@ -1,4 +1,4 @@
-import { CartStore, Course, Discount } from "@/types";
+import { CartStore, Discount } from "@/types";
 import { create } from "zustand";
 import { persist, PersistOptions, createJSONStorage } from "zustand/middleware";
 
@@ -9,7 +9,15 @@ interface CartState {
   removeCourse: (courseId: string) => void;
   clearCart: () => void;
   applyCoupon: (coupon: Discount) => void;
-  removeCoupon: () => void; // Optional: if you want to allow removing/resetting coupon
+  removeCoupon: () => void;
+  // Helper methods to get separate arrays
+  getCourses: () => CartStore[];
+  getTestSeries: () => CartStore[];
+  // Method to prepare data for order API
+  getOrderData: () => {
+    course_slugs: string[];
+    test_series_slugs: string[];
+  };
 }
 
 type CartPersist = {
@@ -27,12 +35,13 @@ const persistOptions: PersistOptions<CartState, CartPersist> = {
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       courses: [],
       coupon: { code: "", percentage: 0 }, // Initial coupon state
+      
       addCourse: (course) =>
         set((state) => {
-          // Prevent adding duplicate courses
+          // Prevent adding duplicate courses/test series
           if (
             state.courses.find(
               (c) => c.slug === course.slug && c.type === course.type
@@ -43,14 +52,42 @@ export const useCartStore = create<CartState>()(
 
           return { courses: [...state.courses, course] };
         }),
+        
       removeCourse: (courseId) =>
         set((state) => ({
           courses: state.courses.filter((course) => course.slug !== courseId),
         })),
+        
       clearCart: () =>
         set({ courses: [], coupon: { code: "", percentage: 0 } }), // Clear coupon on cart clear
+        
       applyCoupon: (coupon) => set({ coupon }),
+      
       removeCoupon: () => set({ coupon: { code: "", percentage: 0 } }), // Optional
+      
+      // Helper method to get only courses
+      getCourses: () => {
+        const state = get();
+        return state.courses.filter(item => item.type === 'course');
+      },
+      
+      // Helper method to get only test series
+      getTestSeries: () => {
+        const state = get();
+        return state.courses.filter(item => item.type === 'test_series');
+      },
+      
+      // Method to prepare data for order API according to your backend structure
+      getOrderData: () => {
+        const state = get();
+        const courses = state.courses.filter(item => item.type === 'course');
+        const testSeries = state.courses.filter(item => item.type === 'test_series');
+        
+        return {
+          course_slugs: courses.map(course => course.slug),
+          test_series_slugs: testSeries.map(series => series.slug)
+        };
+      },
     }),
     persistOptions
   )

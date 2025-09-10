@@ -1,8 +1,57 @@
+export interface OrderData {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  pin_code: string;
+  city: string;
+  state: string;
+  country: string;
+  course_slugs: string[];
+  test_series_slugs: string[];
+  promo_code_applied?: string;
+  discount_amount?: number;
+}
+
+export interface OrderResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    order: {
+      order_number: string;
+      name: string;
+      email: string;
+      phone: string;
+      address: string;
+      pin_code: string;
+      city: string;
+      state: string;
+      country: string;
+      status: string;
+      gross_amount: number;
+      discount_amount: number;
+      net_amount: number;
+      promo_code_applied?: string;
+    };
+    courses: Array<{
+      heading: string;
+      slug: string;
+    }>;
+    test_series: Array<{
+      heading: string;
+      slug: string;
+    }>;
+  };
+}
+
+// Update your existing Discount interface to be more flexible
 export interface Discount {
   code: string;
   percentage?: number;
+  description?: string;
+  valid_until?: string;
+  discount_amount?: number; // Add this for fixed amount discounts
 }
-
 export interface Career {
   id: number;
   name: string;
@@ -224,14 +273,29 @@ export interface OrderFormErrors {
 }
 
 export interface CartStore {
-  type: string;
+  type: 'course' | 'test_series'; // Make this more specific
   slug: string;
   heading: string;
-  faculty?: string[];
+  sub_heading?: string;
+  faculty?: string[] | Faculty[]; // Allow both string array and Faculty array
+  faculties?: Faculty[]; // Add this to match your backend structure
   duration: string;
   price: number;
-  image: string;
+  image?: string; // Make optional since you're using featured_image_url
+  featured_image_url?: string; // Add this to match backend
+  language?: string;
+  video_lectures?: string;
+  questions_count?: string;
+  short_description?: string;
+  study_material_url?: string;
+  timetable_url?: string;
+  featured?: boolean;
+  sequence?: number;
+  // Additional fields for test series
+  testCount?: number;
+  subjects?: string[];
 }
+
 
 interface TestSeriesPivot {
   test_series_category_id: number;

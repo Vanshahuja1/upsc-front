@@ -11,6 +11,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { fetchData } from "@/utils/apiUtils";
+
 const Cart = () => {
   const router = useRouter();
   // Use the cart store to get courses and actions
@@ -35,6 +36,10 @@ const Cart = () => {
   };
   console.log(courses);
 
+  // Separate courses and test series based on the type field
+  const courseItems = courses.filter(item => item.type === 'course');
+  const testSeriesItems = courses.filter(item => item.type === 'test_series');
+
   // Calculate price details based on courses in cart
   const calculatePriceDetails = () => {
     const coursePrice = courses.reduce(
@@ -49,7 +54,6 @@ const Cart = () => {
     return {
       coursePrice,
       discount,
-
       processingFee,
       totalPayable,
     };
@@ -57,16 +61,53 @@ const Cart = () => {
 
   const priceDetails = calculatePriceDetails();
 
+  // Function to render cart header
+  const renderCartHeader = () => {
+    const courseCount = courseItems.length;
+    const testSeriesCount = testSeriesItems.length;
+    
+    if (courseCount === 0 && testSeriesCount === 0) {
+      return (
+        <h1 className="text-xl font-semibold mb-3">
+          <span className="text-orange">0 Items</span> in Cart
+        </h1>
+      );
+    }
+
+    const headerParts = [];
+    
+    if (courseCount > 0) {
+      headerParts.push(
+        <span key="courses" className="text-orange">
+          {courseCount} {courseCount === 1 ? "Course" : "Courses"}
+        </span>
+      );
+    }
+    
+    if (testSeriesCount > 0) {
+      headerParts.push(
+        <span key="testSeries" className="text-orange">
+          {testSeriesCount} {testSeriesCount === 1 ? "Test Series" : "Test Series"}
+        </span>
+      );
+    }
+
+    return (
+      <h1 className="text-xl font-semibold mb-3">
+        {headerParts.reduce((prev, curr, index) => 
+          index === 0 ? [curr] : [...prev, " and ", curr], 
+          [] as React.ReactNode[]
+        )}{" "}
+        in Cart
+      </h1>
+    );
+  };
+
   return (
     <div>
       <div className="min-h-screen bg-[#FFF7F0] px-4 md:px-8 lg:px-16 py-8">
         <div className="container mx-auto max-w-6xl">
-          <h1 className="text-xl font-semibold mb-3">
-            <span className="text-orange">
-              {courses.length} {courses.length === 1 ? "Course" : "Courses"}
-            </span>{" "}
-            in Cart
-          </h1>
+          {renderCartHeader()}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Cart Items */}
@@ -80,7 +121,7 @@ const Cart = () => {
                           {/* Replace with actual images */}
                           <div className="w-full h-full bg-gray-300 ">
                             <Image
-                              src={course.image || "/images/placeholder.png"}
+                              src={course.featured_image_url || course.image || "/images/placeholder.png"}
                               alt={course.heading}
                               fill
                               className="object-cover rounded-2xl"
@@ -93,17 +134,37 @@ const Cart = () => {
                         <h3 className="text-lg font-semibold">
                           {course.heading}
                         </h3>
+                        
+                        {/* Show duration for both courses and test series */}
                         {course.duration && (
                           <div className="text-sm text-orange bg-orange/10 px-2 rounded-full w-max mt-1">
-                            {course.duration}
+                            {course.type === 'test_series' ? `Duration: ${course.duration}` : course.duration}
                           </div>
                         )}
+                        
+                        {/* Show faculty for both courses and test series */}
                         {course.faculty && (
                           <div className="text-sm text-orange bg-orange/10 px-2 rounded-full w-max mt-3">
                             {course.faculty
                               .map((faculty) => faculty)
                               .join(", ")}
                           </div>
+                        )}
+                        
+                        {/* Additional info for test series */}
+                        {course.type === 'test_series' && (
+                          <>
+                            {course.testCount && (
+                              <div className="text-sm text-orange bg-orange/10 px-2 rounded-full w-max mt-1">
+                                {course.testCount} Tests
+                              </div>
+                            )}
+                            {course.subjects && (
+                              <div className="text-sm text-orange bg-orange/10 px-2 rounded-full w-max mt-1">
+                                {course.subjects.join(", ")}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
