@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FaPhoneAlt,
   FaQuora,
@@ -38,12 +38,9 @@ import { fetchData } from "@/utils/apiUtils";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [headerVisible, setHeaderVisible] = useState(true);
   const [isLogIn, setIsLogIn] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const path = usePathname();
   const { courses } = useCartStore();
   const [apiData, setApiData] = useState<OrganizationInfo>();
@@ -93,41 +90,7 @@ const Header = () => {
     setIsMenuOpen((open) => !open);
   };
 
-  // Improved scroll handler with debouncing and smoother logic
-  const handleScroll = useCallback(() => {
-    if (typeof window === "undefined") return;
-
-    // Clear existing timeout
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-
-    // Debounce scroll events
-    scrollTimeoutRef.current = setTimeout(() => {
-      const scrollY = window.scrollY;
-      const delta = scrollY - lastScrollY;
-      const threshold = 10; // Increased threshold to reduce sensitivity
-
-      // More stable logic for showing/hiding header
-      if (scrollY < 50) {
-        // Always show header when near top
-        setHeaderVisible(true);
-      } else if (Math.abs(delta) > threshold) {
-        // Only change state if scroll delta is significant
-        if (delta > 0 && scrollY > 150) {
-          // Scrolling down and past threshold
-          setHeaderVisible(false);
-        } else if (delta < 0) {
-          // Scrolling up
-          setHeaderVisible(true);
-        }
-      }
-
-      setLastScrollY(scrollY);
-    }, 10); // Small delay to debounce
-  }, [lastScrollY]);
-
-  // Fetch organization info + add/remove scroll listener + check auth
+  // Fetch organization info and check auth
   useEffect(() => {
     const load = async () => {
       const data = await fetchData<OrganizationInfo>("/company");
@@ -135,18 +98,7 @@ const Header = () => {
     };
     load();
     checkAuthStatus();
-
-    // Add scroll listener with passive option
-    const scrollHandler = handleScroll;
-    window.addEventListener("scroll", scrollHandler, { passive: true });
-    
-    return () => {
-      window.removeEventListener("scroll", scrollHandler);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [handleScroll]);
+  }, []);
 
   // Animate mobile menu when it opens
   useEffect(() => {
@@ -172,8 +124,8 @@ const Header = () => {
   }, [isMenuOpen]);
 
   return (
-    <header className="z-50 sticky top-0">
-      {/* RED TOP BAR: Improved transform with will-change for better performance */}
+    <header className="z-50 sticky top-0 bg-white shadow-sm">
+      {/* RED TOP BAR: Always visible */}
       {(apiData?.phones?.[0]?.number ||
         apiData?.emails?.[0]?.email ||
         apiData?.social_media?.facebook_link ||
@@ -181,19 +133,7 @@ const Header = () => {
         apiData?.social_media?.linkedin_link ||
         apiData?.social_media?.twitter_link ||
         apiData?.social_media?.youtube_link) && (
-        <div
-          className={`
-            header-top
-            bg-primaryred text-white py-[8px]
-            will-change-transform
-            transform transition-transform duration-500 ease-out
-            ${headerVisible ? "translate-y-0" : "-translate-y-full"}
-          `}
-          style={{
-            backfaceVisibility: 'hidden',
-            perspective: '1000px'
-          }}
-        >
+        <div className="header-top bg-primaryred text-white py-[8px]">
           <div className="bg-primaryred sm:space-x-3 flex justify-between items-center screen padding-x">
             <div className="hidden sm:block">
               <div className="flex gap-x-4">
@@ -269,23 +209,8 @@ const Header = () => {
         </div>
       )}
 
-      {/* WHITE MAIN HEADER: Improved transform with better performance */}
-      <div
-        className={`
-          desktop-heading bg-white relative
-          will-change-transform
-          transition-transform duration-500 ease-out
-          ${
-            headerVisible
-              ? "translate-y-0"
-              : "-translate-y-full"
-          }
-        `}
-        style={{
-          backfaceVisibility: 'hidden',
-          perspective: '1000px'
-        }}
-      >
+      {/* WHITE MAIN HEADER: Always visible */}
+      <div className="desktop-heading bg-white relative">
         <div className="screen py-2 flex items-center justify-between padding-x">
           {/* Logo */}
           <div className="w-52 flex-shrink-0">
