@@ -58,22 +58,25 @@ const Header = () => {
   ];
 
   // Check authentication status
-  const checkAuthStatus = async () => {
+ const checkAuthStatus = () => {
   try {
     setAuthLoading(true);
     const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
     
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/check-status`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` })
+    // Check if both token and user exist in localStorage
+    if (token && user) {
+      try {
+        // Verify that user data is valid JSON
+        JSON.parse(user);
+        setIsLogIn(true);
+      } catch (parseError) {
+        // If user data is corrupted, clear localStorage and set as not logged in
+        console.error('Invalid user data in localStorage:', parseError);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setIsLogIn(false);
       }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      setIsLogIn(data.authenticated || false);
     } else {
       setIsLogIn(false);
     }

@@ -33,11 +33,20 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (response.ok && data.status) {
+      if (response.ok) {
         setMessage("Login successful!");
         console.log("Login successful:", data);
         console.log("User data:", data.user);
         console.log("Token:", data.token);
+        
+        // Save user data and token to localStorage
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
+        
         // You can redirect user here or handle success as needed
       } else {
         setError(data.message || "Login failed");
@@ -75,7 +84,7 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (response.ok && data.status) {
+      if (response.ok) {
         setMessage("Password reset link sent to your email. Please check your inbox.");
         console.log("Forgot password successful:", data);
         // Move to reset step if token is provided, or stay on forgot step
@@ -134,7 +143,7 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (response.ok && data.status) {
+      if (response.ok) {
         setMessage("Password reset successful! You can now login with your new password.");
         console.log("Password reset successful:", data);
         // Reset form and go back to login
