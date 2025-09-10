@@ -65,29 +65,30 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
   // Function to check if user is authenticated
   const checkUserAuthStatus = async () => {
-    try {
-      // API call to check authentication status
-      const response = await fetch('/api/auth/check-status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Include authorization token from localStorage or cookies
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
-        },
-        credentials: 'include', // Include cookies if using cookie-based auth
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setIsLoggedIn(data.isAuthenticated);
-      } else {
-        setIsLoggedIn(false);
-      }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
+  try {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token') || '';
+    
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/check-status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include', // Include cookies if using cookie-based auth
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      // Handle both possible response formats
+      setIsLoggedIn(data.isAuthenticated || data.authenticated || false);
+    } else {
       setIsLoggedIn(false);
     }
-  };
+  } catch (error) {
+    console.error('Error checking auth status:', error);
+    setIsLoggedIn(false);
+  }
+};
 
   // Function to check if user has access to this course
   const checkCourseAccess = async () => {

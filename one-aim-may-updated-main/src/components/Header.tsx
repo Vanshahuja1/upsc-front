@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import { IoIosArrowForward, IoMdMail } from "react-icons/io";
 import { FaFacebookF, FaSquareXTwitter } from "react-icons/fa6";
-import { FaXTwitter } from "react-icons/fa6";
+
 
 import { RiMenu3Line } from "react-icons/ri";
 import { IoMdClose } from "react-icons/io";
@@ -59,31 +59,31 @@ const Header = () => {
 
   // Check authentication status
   const checkAuthStatus = async () => {
-    try {
-      setAuthLoading(true);
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch('/api/auth/check-status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setIsLogIn(data.authenticated || false);
-      } else {
-        setIsLogIn(false);
+  try {
+    setAuthLoading(true);
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/check-status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      setIsLogIn(data.authenticated || false);
+    } else {
       setIsLogIn(false);
-    } finally {
-      setAuthLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    setIsLogIn(false);
+  } finally {
+    setAuthLoading(false);
+  }
+};
 
   // Toggle mobile menu
   const toggleMenu = () => {
