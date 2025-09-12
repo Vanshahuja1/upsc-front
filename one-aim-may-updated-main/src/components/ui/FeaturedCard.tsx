@@ -64,31 +64,10 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   }, [isLoggedIn, slug]);
 
   // Function to check if user is authenticated
-  const checkUserAuthStatus = async () => {
-  try {
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token') || '';
-    
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/check-status`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      credentials: 'include', // Include cookies if using cookie-based auth
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      // Handle both possible response formats
-      setIsLoggedIn(data.isAuthenticated || data.authenticated || false);
-    } else {
-      setIsLoggedIn(false);
-    }
-  } catch (error) {
-    console.error('Error checking auth status:', error);
-    setIsLoggedIn(false);
+  const checkUserAuthStatus = () => {
+    const token = localStorage.getItem('token');
+    setIsLoggedIn(!!token);
   }
-};
 
   // Function to check if user has access to this course
   const checkCourseAccess = async () => {

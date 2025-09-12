@@ -276,13 +276,14 @@ const Header = () => {
                     </div>
                   </Link>
                 ) : (
-                  // Show login button when not logged in
-                  <Button
-                    href="/auth/login"
-                    className="!py-3 !px-8 hover:bg-primaryred !text-white whitespace-nowrap flex-shrink-0"
-                  >
+                  
+
+                <Link href="/auth/login">
+                  <Button className="!py-3 !px-8 hover:bg-primaryred !text-white whitespace-nowrap flex-shrink-0">
                     Login
                   </Button>
+                </Link>
+
                 )}
               </>
             )}

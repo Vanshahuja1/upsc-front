@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // For Next.js 13+ App Router
+// import { useRouter } from "next/router"; // For Next.js Pages Router
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -47,7 +50,11 @@ export default function LoginPage() {
           localStorage.setItem("token", data.token);
         }
         
-        // You can redirect user here or handle success as needed
+        // Redirect to home page after successful login
+        setTimeout(() => {
+          router.push("/");
+        }, 1000); // Small delay to show success message
+        
       } else {
         setError(data.message || "Login failed");
       }
