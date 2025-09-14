@@ -6,7 +6,7 @@ import React, { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCartStore } from "@/store/cartStore";
-// Renamed to avoid conflict if a more detailed TestSeries is imported
+
 import { toast } from "react-toastify";
 import { CartStore, Course } from "@/types";
 import {
@@ -75,11 +75,11 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
     setIsCheckingAccess(true);
     try {
-      const response = await fetch(`/api/courses/check-access`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/add/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -116,11 +116,11 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
     setIsAddingToCart(true);
     try {
       // API call to add course to cart
-      const response = await fetch('/api/cart/add', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/add/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         credentials: 'include',
         body: JSON.stringify({

@@ -41,46 +41,69 @@ const AddressPage = () => {
   });
 
   const onSubmit = async (data: AddressFormData) => {
-    try {
-      // 👇 cart ke courses ko separate arrays me todna
-      const course_slugs = courses
-        .filter((c) => c.type === "course")
-        .map((c) => c.slug);
-      const test_series_slugs = courses
-        .filter((c) => c.type === "test_series")
-        .map((c) => c.slug);
+  try {
+    console.log("Raw cart courses:", courses);
+    
+    // ✅ Enhanced filtering with validation
+    const course_slugs = courses
+      .filter((c) => c.type === "course" && c.slug && typeof c.slug === 'string' && c.slug.trim() !== "")
+      .map((c) => c.slug.trim());
+      
+    const test_series_slugs = courses
+      .filter((c) => c.type === "test_series" && c.slug && typeof c.slug === 'string' && c.slug.trim() !== "")
+      .map((c) => c.slug.trim());
 
-      const payload = {
-        ...data,
-        course_slugs,
-        test_series_slugs,
-      };
-
-      // ✅ Fixed axios request
-      const response = await axios.post<OrderFormSchema>(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/orders`,
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN}`,
-          },
-        }
-      );
-
-      console.log("Order submitted:", response.data);
-      toast.success("Order placed successfully!");
-
-      // ✅ redirect after success
-      router.push("/cart/payment");
-    } catch (error: any) {
-      console.error("Failed to submit order:", error.response?.data || error);
-      toast.error(
-        error.response?.data?.message ||
-          "Failed to submit form. Please try again."
-      );
+    // ✅ Validate we have at least some courses
+    if (course_slugs.length === 0 && test_series_slugs.length === 0) {
+      toast.error("No valid courses found in cart");
+      return;
     }
-  };
+
+    const payload = {
+      ...data,
+      course_slugs: course_slugs,
+      test_series_slugs: test_series_slugs,
+    };
+
+    // ✅ Debug logging
+    console.log("Final payload:", JSON.stringify(payload, null, 2));
+    console.log("Course slugs count:", course_slugs.length);
+    console.log("Test series slugs count:", test_series_slugs.length);
+
+    const response = await axios.post<OrderFormSchema>(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/orders`,
+      payload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN}`,
+        },
+      }
+    );
+
+    console.log("Order submitted:", response.data);
+    toast.success("Order placed successfully!");
+    router.push("/cart/payment");
+    
+  } catch (error: any) {
+    console.error("Failed to submit order:", error.response?.data || error);
+    
+    // ✅ Better error logging
+    if (error.response?.data?.errors) {
+      console.log("Validation errors:", error.response.data.errors);
+      
+      // Log specific field errors
+      Object.keys(error.response.data.errors).forEach(field => {
+        console.log(`${field}:`, error.response.data.errors[field]);
+      });
+    }
+    
+    toast.error(
+      error.response?.data?.message ||
+        "Failed to submit form. Please try again."
+    );
+  }
+};
   return (
     <div className="min-h-screen bg-[#FFF7F0] px-4 md:px-8 lg:px-16 py-8">
       <div className="container mx-auto max-w-6xl">
