@@ -6,10 +6,10 @@ import {
   FaInstagram,
   FaYoutube,
   FaLinkedin,
+  FaUser,
 } from "react-icons/fa";
 import { IoIosArrowForward, IoMdMail } from "react-icons/io";
 import { FaFacebookF, FaSquareXTwitter } from "react-icons/fa6";
-
 
 import { RiMenu3Line } from "react-icons/ri";
 import { IoMdClose } from "react-icons/io";
@@ -265,25 +265,32 @@ const Header = () => {
             {!authLoading && (
               <>
                 {isLogIn ? (
-                  // Show cart when logged in
-                  <Link
-                    href={"/cart"}
-                    className="h-12 w-12 p-3 bg-[#FF7B07]/20 group hover:bg-primaryred duration-300 ease-in-out rounded-full flex-center relative cursor-pointer flex-shrink-0"
-                  >
-                    <BagIcon className="h-7 w-7 text-black group-hover:text-white duration-300 ease-in-out" />
-                    <div className="h-5 w-5 text-white absolute bg-[#DC8940] top-1 rounded-full right-0 text-sm flex items-center justify-center">
-                      {courses.length}
-                    </div>
-                  </Link>
+                  // Show cart and profile when logged in
+                  <>
+                    <Link
+                      href={"/cart"}
+                      className="h-12 w-12 p-3 bg-[#FF7B07]/20 group hover:bg-primaryred duration-300 ease-in-out rounded-full flex-center relative cursor-pointer flex-shrink-0"
+                    >
+                      <BagIcon className="h-7 w-7 text-black group-hover:text-white duration-300 ease-in-out" />
+                      <div className="h-5 w-5 text-white absolute bg-[#DC8940] top-1 rounded-full right-0 text-sm flex items-center justify-center">
+                        {courses.length}
+                      </div>
+                    </Link>
+                    
+                    {/* Profile Icon */}
+                    <Link
+                      href={"/profile"}
+                      className="h-12 w-12 p-3 bg-[#FF7B07]/20 group hover:bg-primaryred duration-300 ease-in-out rounded-full flex items-center justify-center cursor-pointer flex-shrink-0"
+                    >
+                      <FaUser className="h-6 w-6 text-black group-hover:text-white duration-300 ease-in-out" />
+                    </Link>
+                  </>
                 ) : (
-                  
-
-                <Link href="/auth/login">
-                  <Button className="!py-3 !px-8 hover:bg-primaryred !text-white whitespace-nowrap flex-shrink-0">
-                    Login
-                  </Button>
-                </Link>
-
+                  <Link href="/auth/login">
+                    <Button className="!py-3 !px-8 hover:bg-primaryred !text-white whitespace-nowrap flex-shrink-0">
+                      Login
+                    </Button>
+                  </Link>
                 )}
               </>
             )}
@@ -380,21 +387,35 @@ const Header = () => {
                 Contact Us
               </Link>
             </div>
+            
             {isLogIn && (
-              <div className="flex gap-4 mobile-menu-item">
-                <div className="text-orange hover:text-red-700 relative">
-                  <BagIcon />
-                  {courses.length > 0 && (
-                    <div className="h-5 w-5 text-white absolute bg-[#DC8940] -top-2 rounded-full -right-2 text-sm flex items-center justify-center">
-                      {courses.length}
-                    </div>
-                  )}
+              <>
+                <div className="flex gap-4 mobile-menu-item">
+                  <div className="text-orange hover:text-red-700 relative">
+                    <BagIcon />
+                    {courses.length > 0 && (
+                      <div className="h-5 w-5 text-white absolute bg-[#DC8940] -top-2 rounded-full -right-2 text-sm flex items-center justify-center">
+                        {courses.length}
+                      </div>
+                    )}
+                  </div>
+                  <Link href="/cart" className="hover:text-red-700 font-semibold">
+                    Cart
+                  </Link>
                 </div>
-                <Link href="/cart" className="hover:text-red-700 font-semibold">
-                  Cart
-                </Link>
-              </div>
+                
+                {/* Mobile Profile Link */}
+                <div className="flex gap-4 mobile-menu-item">
+                  <div className="text-orange hover:text-red-700">
+                    <FaUser className="h-5 w-5" />
+                  </div>
+                  <Link href="/profile" className="hover:text-red-700 font-semibold">
+                    Profile
+                  </Link>
+                </div>
+              </>
             )}
+            
             {/* Mobile Login Button - only show when not logged in */}
             {!authLoading && !isLogIn && (
               <div className="flex gap-4 mobile-menu-item">

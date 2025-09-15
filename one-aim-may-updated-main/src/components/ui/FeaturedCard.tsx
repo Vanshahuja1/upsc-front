@@ -75,10 +75,11 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
     setIsCheckingAccess(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/add/cart`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/order/cart/add`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         credentials: 'include',
@@ -116,10 +117,13 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
     setIsAddingToCart(true);
     try {
       // API call to add course to cart
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/add/cart`, {
+      const token = localStorage.getItem('token');
+      console.log("Token for cart add", token);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/order/cart/add`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         credentials: 'include',
