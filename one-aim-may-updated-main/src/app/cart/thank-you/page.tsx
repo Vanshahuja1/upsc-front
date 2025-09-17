@@ -3,14 +3,30 @@
 import React, { useEffect, useState } from "react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
+import { useRouter } from "next/navigation";
 import Footer from "@/components/Footer";
 import PButton from "@/components/common/PButton";
 
 const ThankYouPage = () => {
   const { width, height } = useWindowSize();
+  const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(true);
+  const [isClient, setIsClient] = useState(false);
+  const [orderDetails, setOrderDetails] = useState({
+    orderId: '',
+    date: ''
+  });
 
   useEffect(() => {
+    // Set client-side flag to prevent hydration mismatch
+    setIsClient(true);
+    
+    // Generate order details on client-side only
+    setOrderDetails({
+      orderId: `#ORD-${Math.floor(100000 + Math.random() * 900000)}`,
+      date: new Date().toLocaleDateString()
+    });
+    
     // Stop confetti after 5 seconds
     const timer = setTimeout(() => {
       setShowConfetti(false);
@@ -19,9 +35,13 @@ const ThankYouPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
+  const handleContinueShopping = () => {
+    router.push('/course');
+  };
+
   return (
     <div>
-      {showConfetti && (
+      {isClient && showConfetti && (
         <Confetti
           width={width}
           height={height}
@@ -62,16 +82,34 @@ const ThankYouPage = () => {
 
             <div className="mb-8 mx-auto max-w-md p-4 border rounded-lg bg-gray-50">
               <p className="font-medium mb-2">Order Details:</p>
-              <p className="text-gray-600">
-                Order ID: #ORD-{Math.floor(100000 + Math.random() * 900000)}
-              </p>
-              <p className="text-gray-600">
-                Date: {new Date().toLocaleDateString()}
-              </p>
+              {isClient ? (
+                <>
+                  <p className="text-gray-600">
+                    Order ID: {orderDetails.orderId}
+                  </p>
+                  <p className="text-gray-600">
+                    Date: {orderDetails.date}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-600">
+                    Order ID: Loading...
+                  </p>
+                  <p className="text-gray-600">
+                    Date: Loading...
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="flex justify-center">
-              <PButton href="/">Continue Shopping</PButton>
+              <button
+                onClick={handleContinueShopping}
+                className="bg-black text-white py-2 px-8 rounded-full shadow-lg hover:bg-primaryred transition-all duration-300"
+              >
+                Continue Shopping
+              </button>
             </div>
           </div>
         </div>

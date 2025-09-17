@@ -58,8 +58,61 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
   // Check if user is logged in and has course access on component mount
   useEffect(() => {
     checkUserAuthStatus();
+  }, []);
+
+  // Separate useEffect for course access checking
+  useEffect(() => {
     if (isLoggedIn) {
       checkCourseAccess();
+    }
+  }, [isLoggedIn, slug]);
+
+  // Listen for storage changes to refresh access when user completes payment
+  useEffect(() => {
+    const checkForPurchasedCourses = () => {
+      const purchasedCoursesString = localStorage.getItem('purchasedCourses');
+      const purchaseTimestamp = localStorage.getItem('courseAccessRefreshTimestamp');
+      
+      if (purchasedCoursesString && purchaseTimestamp) {
+        try {
+          const purchasedCourses = JSON.parse(purchasedCoursesString);
+          const timestamp = parseInt(purchaseTimestamp);
+          const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+          
+          // Check if this course was purchased recently and needs refresh
+          if (purchasedCourses.includes(slug) && timestamp > fiveMinutesAgo) {
+            console.log(`Refreshing access for recently purchased course: ${slug}`);
+            
+            // Add a longer delay to ensure backend processing is complete
+            setTimeout(() => {
+              checkCourseAccess();
+            }, 3000);
+            
+            // Remove this course from the list to avoid repeated checks
+            const updatedCourses = purchasedCourses.filter((courseSlug: string) => courseSlug !== slug);
+            if (updatedCourses.length === 0) {
+              localStorage.removeItem('purchasedCourses');
+              localStorage.removeItem('courseAccessRefreshTimestamp');
+            } else {
+              localStorage.setItem('purchasedCourses', JSON.stringify(updatedCourses));
+            }
+          }
+        } catch (e) {
+          console.error('Error parsing purchased courses:', e);
+          localStorage.removeItem('purchasedCourses');
+          localStorage.removeItem('courseAccessRefreshTimestamp');
+        }
+      }
+    };
+
+    if (isLoggedIn) {
+      // Check immediately
+      checkForPurchasedCourses();
+      
+      // Set up periodic checks for recently purchased courses
+      const interval = setInterval(checkForPurchasedCourses, 3000);
+      
+      return () => clearInterval(interval);
     }
   }, [isLoggedIn, slug]);
 
@@ -75,23 +128,40 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
 
     setIsCheckingAccess(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/order/cart/add`, {
+      // Get user data from localStorage
+      const userDataString = localStorage.getItem('user');
+      if (!userDataString) {
+        setHasCourseAccess(false);
+        return;
+      }
+
+      let userId;
+      try {
+        const userData = JSON.parse(userDataString);
+        userId = userData.id;
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+        setHasCourseAccess(false);
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders/check-access`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
-        credentials: 'include',
         body: JSON.stringify({
-          courseSlug: slug,
-          courseType: testSeries ? 'test-series' : 'course'
+          frontend_user_id: userId,
+          course_slug: slug,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        setHasCourseAccess(data.hasAccess);
+        setHasCourseAccess(data.success || data.has_access);
       } else {
         setHasCourseAccess(false);
       }
@@ -123,10 +193,10 @@ const FeaturedCard: React.FC<FeaturedCardProps> = ({
         method: 'POST',
         headers: {
           'Accept': 'application/json',
+          'Content-Type': 'application/json',
           'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
-        credentials: 'include',
         body: JSON.stringify({
           courseSlug: slug,
           courseType: type,

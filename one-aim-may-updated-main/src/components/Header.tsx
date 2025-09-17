@@ -33,8 +33,7 @@ import {
   TestSeriesIcon,
 } from "./icons";
 import { useCartStore } from "@/store/cartStore";
-import { OrganizationInfo } from "@/types";
-import { fetchData } from "@/utils/apiUtils";
+import { useOrganization } from "@/contexts/OrganizationContext";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,7 +42,7 @@ const Header = () => {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const path = usePathname();
   const { courses } = useCartStore();
-  const [apiData, setApiData] = useState<OrganizationInfo>();
+  const { data: apiData } = useOrganization();
 
   // Navigation items
   const navItems = [
@@ -90,13 +89,8 @@ const Header = () => {
     setIsMenuOpen((open) => !open);
   };
 
-  // Fetch organization info and check auth
+  // Check authentication status and run once
   useEffect(() => {
-    const load = async () => {
-      const data = await fetchData<OrganizationInfo>("/company");
-      setApiData(data);
-    };
-    load();
     checkAuthStatus();
   }, []);
 

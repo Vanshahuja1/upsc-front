@@ -5,6 +5,7 @@ import "./globals.css";
 import TopDown from "@/components/TopDown";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { OrganizationProvider } from "@/contexts/OrganizationContext";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -26,19 +27,21 @@ export default function RootLayout({
         className={`font-poppins overflow-x-clip antialiased bg-gradient-to-b from-[#FFE5E5] via-[#FFEBD9] to-[#FFF5EE]`}
         suppressHydrationWarning
       >
-        {children}
-        <TopDown />
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
+        <OrganizationProvider>
+          {children}
+          <TopDown />
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </OrganizationProvider>
       </body>
     </html>
   );

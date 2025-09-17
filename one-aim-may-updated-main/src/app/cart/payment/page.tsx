@@ -13,7 +13,7 @@ interface RazorpayPaymentResponse {
 
 const PaymentPage = () => {
   const router = useRouter();
-  const { courses, coupon } = useCartStore();
+  const { courses, coupon, clearCart } = useCartStore();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -67,34 +67,160 @@ const PaymentPage = () => {
       return;
     }
 
-    const options = {
-      key: "rzp_live_vegmIuWT1fULsb",
-      amount: orderSummary.totalPayable * 100,
-      currency: "INR",
-      name: "One Aim",
-      description: `Payment for ${orderSummary.itemCount} courses`,
-      image: "/images/logo.png",
-      handler: function (response: RazorpayPaymentResponse) {
-        window.location.href = "/cart/thank-you";
-      },
-      prefill: {
-        name: "",
-        email: "",
-        contact: "",
-      },
-      notes: {
-        address: "One Aim Corporate Office",
-      },
-      theme: {
-        color: "#FF7B07",
-      },
-    };
+    try {
+      // Get user token and user data from localStorage
+      const token = localStorage.getItem('token');
+      const userDataString = localStorage.getItem('user');
+      
+      if (!token || !userDataString) {
+        alert("Authentication required. Please login again.");
+        return;
+      }
 
-    const paymentObject = new (window as any).Razorpay(options);
-    paymentObject.open();
-  };
+      const userData = JSON.parse(userDataString);
+      const userId = userData.id;
 
-  const paymentMethods = [
+      if (!userId) {
+        alert("User ID not found. Please login again.");
+        return;
+      }
+
+      // Prepare course slugs and test series slugs
+      const course_slugs = courses
+        .filter((c) => c.type === "course" && c.slug)
+        .map((c) => c.slug);
+        
+      const test_series_slugs = courses
+        .filter((c) => c.type === "test_series" && c.slug)
+        .map((c) => c.slug);
+
+      // Create order first to get dynamic order ID
+      console.log("Creating order...");
+      const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          frontend_user_id: userId,
+          name: userData.name || "User Name",
+          email: userData.email || "user@example.com",
+          phone: userData.mobile || userData.phone || "0000000000",
+          address: "Default Address",
+          pin_code: "000000",
+          city: "Default City",
+          state: "Default State",
+          country: "India",
+          course_slugs: course_slugs,
+          test_series_slugs: test_series_slugs,
+          promo_code_applied: coupon.code || null,
+          discount_amount: (orderSummary.coursePrice * (coupon.percentage || 0)) / 100,
+          status: 'pending', // Initial status as pending
+          total_amount: orderSummary.totalPayable,
+        }),
+      });
+
+      if (!orderResponse.ok) {
+        const orderError = await orderResponse.json();
+        console.error('Failed to create order:', orderError);
+        alert("Failed to create order. Please try again.");
+        return;
+      }
+
+      const orderData = await orderResponse.json();
+      console.log("Order response:", orderData); // Debug log
+      
+      // Extract order_number from the correct path based on your API response
+      const dynamicOrderId = orderData.data?.order?.order_number || 
+                           orderData.data?.order_id || 
+                           orderData.order_id;
+
+      if (!dynamicOrderId) {
+        console.error('No order ID received from backend. Response structure:', orderData);
+        alert("Failed to get order ID. Please try again.");
+        return;
+      }
+
+      console.log("Order created successfully with ID:", dynamicOrderId);
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderSummary.totalPayable * 100,
+        currency: "INR",
+        name: "One Aim",
+        description: `Payment for ${orderSummary.itemCount} courses`,
+        image: "/images/logo.png",
+        handler: async function (response: RazorpayPaymentResponse) {
+          try {
+            // Confirm payment with backend using dynamic order ID
+            console.log("Confirming payment with backend...");
+            const paymentConfirmResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders/${dynamicOrderId}/payment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                payment_id: response.razorpay_payment_id,
+                transaction_id: response.razorpay_order_id || response.razorpay_payment_id,
+                status: "Success",
+                payment_signature: response.razorpay_signature || ""
+              }),
+            });
+
+            const paymentConfirmResult = await paymentConfirmResponse.json();
+            
+            if (!paymentConfirmResponse.ok || !paymentConfirmResult.success) {
+              console.error('Payment confirmation failed:', paymentConfirmResult);
+              alert("Payment confirmation failed. Please contact support with your payment ID: " + response.razorpay_payment_id);
+              return;
+            }
+
+            console.log("Payment confirmed successfully");
+
+            // Update order status to completed in backend (optional, depends on your backend logic)
+            // This step might be handled automatically by the payment confirmation endpoint
+
+            // Set refresh flags for course access checking
+            const courseSlugsThatNeedRefresh = courses.map(course => course.slug);
+            localStorage.setItem('purchasedCourses', JSON.stringify(courseSlugsThatNeedRefresh));
+            localStorage.setItem('courseAccessRefreshTimestamp', Date.now().toString());
+            
+            // Clear cart and redirect to success page
+            clearCart();
+            window.location.href = "/cart/thank-you";
+            
+          } catch (error) {
+            console.error('Payment processing error:', error);
+            alert("Payment processing failed. Please contact support.");
+          }
+        },
+        prefill: {
+          name: userData.name || "",
+          email: userData.email || "",
+          contact: userData.mobile || userData.phone || "",
+        },
+        notes: {
+          address: "One Aim Corporate Office",
+        },
+        theme: {
+          color: "#FF7B07",
+        },
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.open();
+      
+    } catch (error) {
+      console.error('Order creation error:', error);
+      alert("Failed to create order. Please try again.");
+    }
+  };  const paymentMethods = [
     { id: "upi", name: "UPI", icon: "💳", amount: `₹${orderSummary.totalPayable.toFixed(2)}` },
     { id: "cards", name: "Debit/Credit Cards", icon: "💳", amount: `₹${orderSummary.totalPayable.toFixed(2)}` },
     { id: "wallets", name: "Wallets", icon: "👛", amount: `₹${orderSummary.totalPayable.toFixed(2)}` },

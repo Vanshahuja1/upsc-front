@@ -1,24 +1,16 @@
 "use client";
-import { OrganizationInfo } from "@/types";
-import { fetchData } from "@/utils/apiUtils";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 const CartNavbar = () => {
   const pathname = usePathname();
   const isCartPage = pathname === "/cart";
   const isAddressPage = pathname === "/cart/address";
   const isPaymentPage = pathname === "/cart/payment";
-  const [apiData, setApiData] = useState<OrganizationInfo>();
-  useEffect(() => {
-    const datas = async () => {
-      const data = await fetchData<OrganizationInfo>("/company");
-      setApiData(data);
-    };
-    datas();
-  }, []);
+  const { data: apiData } = useOrganization();
 
   return (
     <header className="bg-[#FFF7F0]">

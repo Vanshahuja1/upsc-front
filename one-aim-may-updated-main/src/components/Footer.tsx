@@ -1,6 +1,7 @@
+"use client";
+
 import React from "react";
-import { fetchData } from "@/utils/apiUtils";
-import { OrganizationInfo } from "@/types";
+import { useOrganization } from "@/contexts/OrganizationContext";
 import Link from "next/link";
 import Image from "next/image";
 import { IoChevronDown } from "react-icons/io5";
@@ -14,10 +15,20 @@ import {
   FaYoutube,
 } from "react-icons/fa6";
 
-const Footer = async () => {
-  let companyData: OrganizationInfo | null = null;
-  const data = await fetchData<OrganizationInfo>("/company");
-  companyData = data ?? null;
+const Footer = () => {
+  const { data: companyData, loading } = useOrganization();
+
+  if (loading) {
+    return (
+      <footer className="text-gray-800 bg-[#FFEDDD] md:pt-20 pt-10 pb-10">
+        <div className="screen mx-auto padding-x">
+          <div className="text-center py-8">
+            <p>Loading...</p>
+          </div>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="text-gray-800 bg-[#FFEDDD] md:pt-20 pt-10 pb-10">

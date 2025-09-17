@@ -1,6 +1,6 @@
 "use client";
 import { useForm } from "react-hook-form";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { FaPhoneAlt } from "react-icons/fa";
 import { HiMapPin } from "react-icons/hi2";
@@ -9,8 +9,7 @@ import { FaChevronDown } from "react-icons/fa";
 import { CommonHeading2 } from "@/components/common/CommonHeading2";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { fetchData } from "@/utils/apiUtils";
-import { OrganizationInfo } from "@/types";
+import { useOrganization } from "@/contexts/OrganizationContext";
 
 type FormData = {
   name: string;
@@ -29,15 +28,8 @@ export default function ContactForm() {
   } = useForm<FormData>({
     mode: "onChange", // Validate on change to enable/disable submit button
   });
-  const [companyData, setCompanyData] = useState<OrganizationInfo>();
+  const { data: companyData } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  useEffect(() => {
-    const companyData = async () => {
-      const data = await fetchData<OrganizationInfo>("/company");
-      setCompanyData(data);
-    };
-    companyData();
-  }, []);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
