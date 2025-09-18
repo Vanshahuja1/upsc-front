@@ -107,25 +107,76 @@ const ProfilePage = () => {
         return;
       }
 
-      const response = await fetch('https://admin.theoneaim.co.in/api/v1/auth/profile', {
-        method: 'PUT',
+      // Get user ID from localStorage
+      const userDataString = localStorage.getItem('user');
+      let userId = null;
+      
+      if (userDataString) {
+        try {
+          const userData = JSON.parse(userDataString);
+          userId = userData.id;
+        } catch (parseError) {
+          console.error('Error parsing user data:', parseError);
+        }
+      }
+      
+      // If no user ID in localStorage, use the current profile ID
+      if (!userId && userProfile) {
+        userId = userProfile.id;
+      }
+      
+      if (!userId) {
+        setError('User ID not found. Please login again.');
+        return;
+      }
+
+      // Prepare payload with frontend_user_id
+      const payload = {
+        frontend_user_id: userId,
+        name: editForm.name,
+        username: editForm.username,
+        mobile: editForm.mobile,
+      };
+
+      console.log('Update payload:', payload); // Debug log
+
+      const response = await fetch('https://admin.theoneaim.co.in/api/v1/auth/profile/updatess', {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
           'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update profile');
+        const errorData = await response.json();
+        console.error('Update error:', errorData);
+        throw new Error(errorData.message || 'Failed to update profile');
       }
 
       const updatedData = await response.json();
-      setUserProfile(updatedData);
+      console.log('Update response:', updatedData); // Debug log
+      
+      // Update the user profile with the response data
+      if (updatedData.success && updatedData.data) {
+        setUserProfile(updatedData.data);
+        
+        // Also update localStorage with new user data
+        localStorage.setItem('user', JSON.stringify(updatedData.data));
+      } else {
+        setUserProfile(prev => prev ? { ...prev, ...editForm } : null);
+      }
+      
       setIsEditing(false);
+      
+      // Show success message
+      alert('Profile updated successfully!');
+      
     } catch (err) {
+      console.error('Profile update error:', err);
       setError(err instanceof Error ? err.message : 'Failed to update profile');
     }
   };
@@ -301,9 +352,9 @@ const ProfilePage = () => {
                     <MdVerified className="text-green-500 ml-2" title="Email Verified" />
                   )}
                 </div>
-                {!userProfile.email_verified_at && (
+                {/* {!userProfile.email_verified_at && (
                   <p className="text-sm text-amber-600 mt-1">Email not verified</p>
-                )}
+                )} */}
               </div>
 
               <div>
@@ -331,15 +382,6 @@ const ProfilePage = () => {
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Account Information</h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  User ID
-                </label>
-                <div className="flex items-center">
-                  <span className="text-gray-900 font-mono">#{userProfile.id}</span>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Account Role
@@ -407,10 +449,10 @@ const ProfilePage = () => {
               <MdEdit className="mr-2" />
               Change Password
             </button>
-            <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+            {/* <button className="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
               <FaEnvelope className="mr-2" />
               Update Email
-            </button>
+            </button> */}
             <button 
               onClick={() => {
                 localStorage.removeItem('token');

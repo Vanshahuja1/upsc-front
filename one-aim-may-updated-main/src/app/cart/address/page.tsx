@@ -8,9 +8,9 @@ import PButton from "@/components/common/PButton";
 import { toast } from "react-toastify";
 import { OrderFormSchema } from "@/types";
 import { useCartStore } from "@/store/cartStore";
-import { useRouter } from "next/navigation"; // ✅ router import
+import { useRouter } from "next/navigation";
 
-// ✅ Zod Schema
+
 const addressSchema = z.object({
   name: z.string().min(2, "Full name is required"),
   phone: z
@@ -29,7 +29,28 @@ const addressSchema = z.object({
 type AddressFormData = z.infer<typeof addressSchema>;
 const AddressPage = () => {
   const { courses } = useCartStore();
-  const router = useRouter(); // ✅ router initialized
+  const router = useRouter();
+
+  // Get default values from user data
+  const getUserDefaultValues = (): Partial<AddressFormData> => {
+    try {
+      const userDataString = localStorage.getItem('user');
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        return {
+          name: userData.name || "",
+          email: userData.email || "",
+          phone: userData.mobile || userData.phone || "",
+          country: "India",
+        };
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+    }
+    return {
+      country: "India",
+    };
+  };
 
   const {
     register,
@@ -38,10 +59,28 @@ const AddressPage = () => {
   } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
     mode: "onChange",
+    defaultValues: getUserDefaultValues(),
   });
 
   const onSubmit = async (data: AddressFormData) => {
   try {
+    console.log("Form data submitted:", data);
+    
+    // Get user ID from localStorage
+    const userDataString = localStorage.getItem('user');
+    if (!userDataString) {
+      toast.error("User not logged in. Please login first.");
+      return;
+    }
+    
+    const userData = JSON.parse(userDataString);
+    const userId = userData.id;
+    
+    if (!userId) {
+      toast.error("User ID not found. Please login again.");
+      return;
+    }
+    
     console.log("Raw cart courses:", courses);
     
     // ✅ Enhanced filtering with validation
@@ -59,10 +98,21 @@ const AddressPage = () => {
       return;
     }
 
+    // Create payload with frontend_user_id and all required fields
     const payload = {
-      ...data,
+      frontend_user_id: userId,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      pin_code: data.pin_code,
+      city: data.city,
+      state: data.state,
+      country: data.country,
       course_slugs: course_slugs,
       test_series_slugs: test_series_slugs,
+      promo_code_applied: null,
+      discount_amount: 0
     };
 
     // ✅ Debug logging
@@ -70,13 +120,22 @@ const AddressPage = () => {
     console.log("Course slugs count:", course_slugs.length);
     console.log("Test series slugs count:", test_series_slugs.length);
 
+    // Get user token for authorization
+    const userToken = localStorage.getItem('token');
+    if (!userToken) {
+      toast.error("Authentication token not found. Please login again.");
+      return;
+    }
+
     const response = await axios.post<OrderFormSchema>(
       `${process.env.NEXT_PUBLIC_BASE_URL}/orders`,
       payload,
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.NEXT_PUBLIC_AUTH_TOKEN}`,
+          "Accept": "application/json",
+          "x-api-key": "ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5",
+          Authorization: `Bearer ${userToken}`,
         },
       }
     );
