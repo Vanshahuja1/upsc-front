@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FaUser, FaEnvelope, FaPhone, FaCalendarAlt, FaUserTag } from "react-icons/fa";
 import { MdEdit, MdVerified, MdClose } from "react-icons/md";
 import { IoMdCheckmark } from "react-icons/io";
+import { BiTime } from "react-icons/bi";
 import { fetchData } from "@/utils/apiUtils";
 import Image from "next/image";
 
@@ -21,9 +22,23 @@ interface UserProfile {
   deleted_at: string | null;
 }
 
+interface PurchasedCourse {
+  id: number;
+  heading: string;
+  slug: string;
+  featured_image_url: string;
+  price: number;
+  duration: string;
+  type: 'course' | 'test_series';
+  purchase_date: string;
+  status: string;
+}
+
 const ProfilePage = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [purchasedCourses, setPurchasedCourses] = useState<PurchasedCourse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -71,8 +86,101 @@ const ProfilePage = () => {
     }
   };
 
+  // Fetch user's purchased courses
+  const fetchPurchasedCourses = async () => {
+    try {
+      setCoursesLoading(true);
+      const token = localStorage.getItem('token');
+      const userDataString = localStorage.getItem('user');
+      
+      if (!token || !userDataString) {
+        return;
+      }
+
+      const userData = JSON.parse(userDataString);
+      const userId = userData.id;
+
+      // Fetch all orders and filter for the current user
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('All orders response:', data); // Debug log
+        
+        // Process the orders to extract courses for the current user
+        const courses: PurchasedCourse[] = [];
+        
+        if (data.data && Array.isArray(data.data)) {
+          // Filter orders for the current user
+          const userOrders = data.data.filter((order: any) => 
+            order.frontend_user_id === userId || 
+            order.user_id === userId ||
+            order.frontend_user_id === String(userId) ||
+            order.user_id === String(userId)
+          );
+          
+          console.log('User orders found:', userOrders.length); // Debug log
+          
+          userOrders.forEach((order: any) => {
+            // Add courses from this order
+            if (order.courses && Array.isArray(order.courses)) {
+              order.courses.forEach((course: any) => {
+                courses.push({
+                  id: course.id,
+                  heading: course.heading,
+                  slug: course.slug,
+                  featured_image_url: course.featured_image_url || '/images/placeholder.png',
+                  price: course.price || 0,
+                  duration: course.duration || '',
+                  type: 'course',
+                  purchase_date: order.created_at,
+                  status: order.status || 'completed'
+                });
+              });
+            }
+            
+            // Add test series from this order
+            if (order.test_series && Array.isArray(order.test_series)) {
+              order.test_series.forEach((testSeries: any) => {
+                courses.push({
+                  id: testSeries.id,
+                  heading: testSeries.heading,
+                  slug: testSeries.slug,
+                  featured_image_url: testSeries.featured_image_url || '/images/placeholder.png',
+                  price: testSeries.price || 0,
+                  duration: testSeries.duration || '',
+                  type: 'test_series',
+                  purchase_date: order.created_at,
+                  status: order.status || 'completed'
+                });
+              });
+            }
+          });
+        }
+        
+        console.log('Processed courses:', courses); // Debug log
+        setPurchasedCourses(courses);
+      } else {
+        console.error('Failed to fetch orders:', response.status, response.statusText);
+      }
+    } catch (err) {
+      console.error('Error fetching purchased courses:', err);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUserProfile();
+    fetchPurchasedCourses();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -439,6 +547,117 @@ const ProfilePage = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Purchased Courses */}
+        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">My Purchased Courses</h2>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-500">
+                {purchasedCourses.length} course{purchasedCourses.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                onClick={fetchPurchasedCourses}
+                disabled={coursesLoading}
+                className="flex items-center px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                <svg
+                  className={`w-4 h-4 mr-1 ${coursesLoading ? 'animate-spin' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+          
+          {coursesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primaryred"></div>
+              <span className="ml-2 text-gray-600">Loading courses...</span>
+            </div>
+          ) : purchasedCourses.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400 text-6xl mb-4">📚</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No courses purchased yet</h3>
+              <p className="text-gray-600 mb-4">Start your learning journey by purchasing your first course!</p>
+              <button 
+                onClick={() => window.location.href = '/course'}
+                className="px-6 py-2 bg-primaryred text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Browse Courses
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {purchasedCourses.map((course) => (
+                <div key={course.id} className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="relative mb-3">
+                    <Image
+                      src={course.featured_image_url}
+                      alt={course.heading}
+                      width={300}
+                      height={160}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        course.type === 'course' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {course.type === 'course' ? 'Course' : 'Test Series'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                    {course.heading}
+                  </h3>
+                  
+                  <div className="space-y-1 text-sm text-gray-600 mb-3">
+                    {course.duration && (
+                      <div className="flex items-center">
+                        <BiTime className="mr-1" />
+                        <span>{course.duration}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      <FaCalendarAlt className="mr-1" />
+                      <span>Purchased: {new Date(course.purchase_date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="font-semibold text-primaryred">₹{course.price}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.location.href = `/${course.type}/${course.slug}`}
+                      className="flex-1 bg-primaryred text-white py-2 px-3 rounded-md hover:bg-red-600 transition-colors text-sm"
+                    >
+                      Access Course
+                    </button>
+                    <button
+                      onClick={() => window.location.href = `/${course.type}/${course.slug}`}
+                      className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

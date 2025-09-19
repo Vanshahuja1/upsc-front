@@ -275,3 +275,40 @@
 .blog-content ul li p {
   @apply text-gray-700;
 }
+
+/* YouTube responsive video styles */
+.youtube-content .youtube-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  margin: 20px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.youtube-content .youtube-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .youtube-content .youtube-container {
+    margin: 15px 0;
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .youtube-content .youtube-container {
+    margin: 10px 0;
+    border-radius: 4px;
+  }
+}

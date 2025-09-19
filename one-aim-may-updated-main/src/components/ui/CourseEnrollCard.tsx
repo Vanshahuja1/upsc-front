@@ -55,6 +55,79 @@ const CourseEnrollCard: React.FC<CourseEnrollCardProps> = ({
   videoLacture,
   slug,
 }) => {
+  // PDF selection state
+  const [selectedPDFs, setSelectedPDFs] = React.useState<Set<string>>(new Set());
+  const [isAllSelected, setIsAllSelected] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
+  // Handle individual PDF selection
+  const handlePDFSelection = (pdfUrl: string) => {
+    const newSelected = new Set(selectedPDFs);
+    if (newSelected.has(pdfUrl)) {
+      newSelected.delete(pdfUrl);
+    } else {
+      newSelected.add(pdfUrl);
+    }
+    setSelectedPDFs(newSelected);
+    setIsAllSelected(newSelected.size === (studyMaterial?.length || 0));
+  };
+
+  // Handle select all / deselect all
+  const handleSelectAll = () => {
+    if (!studyMaterial) return;
+    
+    if (isAllSelected) {
+      setSelectedPDFs(new Set());
+      setIsAllSelected(false);
+    } else {
+      const allPDFs = new Set(studyMaterial.map(pdf => pdf.url));
+      setSelectedPDFs(allPDFs);
+      setIsAllSelected(true);
+    }
+  };
+
+  // Download selected PDFs (Fixed approach for proper downloads)
+  const downloadSelected = () => {
+    if (selectedPDFs.size === 0) {
+      alert('Please select at least one PDF to download.');
+      return;
+    }
+
+    setIsDownloading(true);
+
+    // Create and trigger downloads for each selected PDF
+    Array.from(selectedPDFs).forEach((pdfUrl, index) => {
+      setTimeout(() => {
+        // Extract clean filename from URL
+        const urlParts = pdfUrl.split('/');
+        const filename = urlParts[urlParts.length - 1] || `download-${index + 1}.pdf`;
+        
+        // Create a hidden anchor element and trigger download
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = filename; // This forces download instead of opening
+        link.style.display = 'none';
+        link.rel = 'noopener'; // Security best practice
+        
+        // Add to DOM, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log(`Download triggered for: ${filename}`);
+        
+        // Reset downloading state after last file
+        if (index === selectedPDFs.size - 1) {
+          setTimeout(() => {
+            setIsDownloading(false);
+          }, 1000);
+        }
+      }, index * 300); // Shorter delay to avoid browser blocking
+    });
+    
+    console.log(`Starting download for ${selectedPDFs.size} files`);
+  };
+
   const { addCourse } = useCartStore();
   const router = useRouter();
 
@@ -168,21 +241,90 @@ const CourseEnrollCard: React.FC<CourseEnrollCardProps> = ({
       {(formattedStudyMaterial?.length || enrollmentDeadline || timeTable) && (
         <div className="bg-white rounded-lg overflow-hidden p-4 shadow-orange shadow-sm">
           <div className="space-y-2">
-            {/* Multiple Study Materials */}
-            {formattedStudyMaterial?.map((file, index) => (
-              <Link
-                key={index}
-                href={file.url}
-                download={file.name} // download name bhi clean
-                target="_blank"
-                className="flex items-center gap-3 cursor-pointer border-b border-dashed hover:text-orange-500 border-gray-300 pb-2"
-              >
-                <div className="text-orange">
-                  <DownloadIcon className="w-8 h-8" />
+            {/* Study Materials with Selection Controls */}
+            {formattedStudyMaterial && formattedStudyMaterial.length > 0 && (
+              <>
+                {/* Select All and Download Controls */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3 border-b border-gray-300 mb-4 gap-3 bg-gray-50 px-3 rounded-md">
+                  <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      Select All ({formattedStudyMaterial.length})
+                    </span>
+                  </label>
+                  <button
+                    onClick={downloadSelected}
+                    disabled={selectedPDFs.size === 0 || isDownloading}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex-shrink-0 min-w-fit whitespace-nowrap border ${
+                      selectedPDFs.size === 0 || isDownloading
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-gray-300'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 border-blue-600 shadow-lg hover:shadow-xl transform hover:scale-105'
+                    }`}
+                    style={{
+                      visibility: 'visible',
+                      display: 'inline-block',
+                      zIndex: 10
+                    }}
+                  >
+                    {isDownloading 
+                      ? `Downloading...` 
+                      : `Download Selected (${selectedPDFs.size})`
+                    }
+                  </button>
                 </div>
-                <span className="font-medium text-sm">{file.name}</span>
-              </Link>
-            ))}
+
+                {/* PDF List with Checkboxes */}
+                {formattedStudyMaterial.map((file, index) => (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-3 border-b border-dashed border-gray-300 pb-2 transition-all ${
+                      selectedPDFs.has(file.url) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedPDFs.has(file.url)}
+                      onChange={() => handlePDFSelection(file.url)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
+                    />
+                    <div
+                      className="flex items-center gap-3 flex-1 cursor-pointer hover:text-orange-500 transition-colors"
+                      onClick={() => {
+                        // Single file download - simplified and reliable
+                        const link = document.createElement('a');
+                        link.href = file.url;
+                        link.download = file.name; // Force download dialog
+                        link.style.display = 'none';
+                        link.rel = 'noopener';
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        console.log(`Download triggered for: ${file.name}`);
+                      }}
+                    >
+                      <div className="text-orange flex-shrink-0">
+                        <DownloadIcon className="w-8 h-8" />
+                      </div>
+                      <span className="font-medium text-sm truncate">{file.name}</span>
+                      {selectedPDFs.has(file.url) && (
+                        <div className="ml-auto">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Selected
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
 
             {enrollmentDeadline && (
               <div className="flex items-center gap-3 border-b border-dashed border-gray-300 py-2">
