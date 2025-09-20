@@ -74,9 +74,9 @@ const ProfilePage = () => {
             const parsedUser = JSON.parse(userData);
             setUserProfile(parsedUser);
             setEditForm({
-              name: parsedUser.name,
-              username: parsedUser.username,
-              mobile: parsedUser.mobile,
+              name: parsedUser.name || "",
+              username: parsedUser.username || "",
+              mobile: parsedUser.mobile || "",
             });
           } catch (parseError) {
             console.error('Error parsing user data from localStorage:', parseError);
@@ -102,14 +102,42 @@ const ProfilePage = () => {
       const data = await response.json();
       console.log('Profile API response:', data); // Debug log
       
-      // Handle the response - if it's wrapped in a data property or direct
-      const profileData = data.data || data;
+      // Handle the response - extract user data from the response
+      const profileData = data.user || data.data || data;
+      console.log('Extracted profile data:', profileData); // Debug log
       
-      setUserProfile(profileData);
+      // Extract profile picture URL - handle both response formats
+      let profilePictureUrl = null;
+      
+      // Format 1: profile_picture is an object with original_url (GET /profile response)
+      if (profileData.profile_picture && typeof profileData.profile_picture === 'object' && profileData.profile_picture.original_url) {
+        profilePictureUrl = profileData.profile_picture.original_url;
+      }
+      // Format 2: profile_picture is null/string, check media array (POST /updatess response)
+      else if (profileData.media && profileData.media.length > 0) {
+        const profilePicMedia = profileData.media.find((media: any) => 
+          media.collection_name === 'profile_picture'
+        );
+        if (profilePicMedia) {
+          profilePictureUrl = profilePicMedia.original_url;
+        }
+      }
+      // Format 3: profile_picture is already a direct URL string
+      else if (profileData.profile_picture && typeof profileData.profile_picture === 'string') {
+        profilePictureUrl = profileData.profile_picture;
+      }
+      
+      // Update profile data with extracted picture URL
+      const processedProfileData = {
+        ...profileData,
+        profile_picture: profilePictureUrl
+      };
+      
+      setUserProfile(processedProfileData);
       setEditForm({
-        name: profileData.name,
-        username: profileData.username,
-        mobile: profileData.mobile,
+        name: processedProfileData.name || "",
+        username: processedProfileData.username || "",
+        mobile: processedProfileData.mobile || "",
       });
     } catch (err) {
       console.error('Profile fetch error:', err);
@@ -122,9 +150,9 @@ const ProfilePage = () => {
           const parsedUser = JSON.parse(userData);
           setUserProfile(parsedUser);
           setEditForm({
-            name: parsedUser.name,
-            username: parsedUser.username,
-            mobile: parsedUser.mobile,
+            name: parsedUser.name || "",
+            username: parsedUser.username || "",
+            mobile: parsedUser.mobile || "",
           });
           setError(null); // Clear error since we found fallback data
         } catch (parseError) {
@@ -217,6 +245,8 @@ const ProfilePage = () => {
   const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('Profile picture selected:', file.name, file.size, 'bytes', file.type);
+      
       // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select a valid image file.');
@@ -234,9 +264,52 @@ const ProfilePage = () => {
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => {
-        setProfilePicPreview(e.target?.result as string);
+        const result = e.target?.result as string;
+        console.log('Profile picture preview created');
+        setProfilePicPreview(result);
+      };
+      reader.onerror = (e) => {
+        console.error('Error reading file:', e);
+        alert('Error reading the selected file.');
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const debugProfileState = () => {
+    console.log('=== PROFILE DEBUG INFO ===');
+    console.log('userProfile:', userProfile);
+    console.log('selectedProfilePic:', selectedProfilePic);
+    console.log('profilePicPreview:', profilePicPreview ? 'Present' : 'None');
+    console.log('editForm:', editForm);
+    console.log('isEditing:', isEditing);
+    console.log('localStorage token:', localStorage.getItem('token') ? 'Present' : 'Missing');
+    console.log('localStorage user:', localStorage.getItem('user'));
+    console.log('=== END DEBUG INFO ===');
+  };
+
+  const testApiCall = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Testing API call with token:', token);
+      
+      const response = await fetch('https://admin.theoneaim.co.in/api/v1/auth/profile/updatess', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
+        },
+      });
+      
+      console.log('Test API Response status:', response.status);
+      console.log('Test API Response headers:', response.headers);
+      
+      const data = await response.text();
+      console.log('Test API Response body:', data);
+      
+    } catch (error) {
+      console.error('Test API Error:', error);
     }
   };
 
@@ -280,9 +353,14 @@ const ProfilePage = () => {
       formData.append('username', editForm.username);
       formData.append('mobile', editForm.mobile);
       
+      // Add email if available (may be required by API)
+      if (userProfile?.email) {
+        formData.append('email', userProfile.email);
+      }
+      
       // Add profile picture if selected
       if (selectedProfilePic) {
-        formData.append('profile_pic', selectedProfilePic);
+        formData.append('profile_picture', selectedProfilePic);
       }
 
       console.log('Update payload:', {
@@ -290,8 +368,19 @@ const ProfilePage = () => {
         name: editForm.name,
         username: editForm.username,
         mobile: editForm.mobile,
-        profile_pic: selectedProfilePic ? selectedProfilePic.name : 'none'
+        email: userProfile?.email,
+        profile_picture: selectedProfilePic ? selectedProfilePic.name : 'none'
       }); // Debug log
+
+      // Log FormData contents for debugging
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(key, '(File):', value.name, value.size, 'bytes');
+        } else {
+          console.log(key, ':', value);
+        }
+      }
 
       const response = await fetch('https://admin.theoneaim.co.in/api/v1/auth/profile/updatess', {
         method: 'POST',
@@ -299,28 +388,34 @@ const ProfilePage = () => {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
           'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
-          // Don't set Content-Type header - let browser set it for FormData
         },
         body: formData,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Update error:', errorData);
-        throw new Error(errorData.message || 'Failed to update profile');
+        let errorMessage = 'Failed to update profile';
+        try {
+          const errorData = await response.json();
+          console.error('Update error response:', errorData);
+          errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const updatedData = await response.json();
       console.log('Update response:', updatedData); // Debug log
       
       // Update the user profile with the response data
-      if (updatedData.success && updatedData.data) {
+      if (updatedData.status && updatedData.user) {
         // Extract profile picture URL from media array if present
-        let profilePictureUrl = updatedData.data.profile_picture;
-        if (updatedData.data.media && updatedData.data.media.length > 0) {
+        let profilePictureUrl = updatedData.user.profile_picture;
+        if (updatedData.user.media && updatedData.user.media.length > 0) {
           // Find profile picture in media array
-          const profilePicMedia = updatedData.data.media.find((media: any) => 
-            media.collection_name === 'profile_pic' || media.collection_name === 'profile_picture'
+          const profilePicMedia = updatedData.user.media.find((media: any) => 
+            media.collection_name === 'profile_picture'
           );
           if (profilePicMedia) {
             profilePictureUrl = profilePicMedia.original_url;
@@ -329,7 +424,7 @@ const ProfilePage = () => {
         
         // Update profile with new picture URL
         const updatedProfile = {
-          ...updatedData.data,
+          ...updatedData.user,
           profile_picture: profilePictureUrl
         };
         
@@ -437,6 +532,11 @@ const ProfilePage = () => {
                     <p className="text-xs text-gray-500 text-center">
                       Hover to change photo
                     </p>
+                    {selectedProfilePic && (
+                      <p className="text-xs text-green-600 text-center mt-1">
+                        ✓ New photo selected: {selectedProfilePic.name}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -446,9 +546,9 @@ const ProfilePage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                      {userProfile.name}
+                      {userProfile.name || 'No name provided'}
                     </h1>
-                    <p className="text-gray-600 mb-3">@{userProfile.username}</p>
+                    <p className="text-gray-600 mb-3">@{userProfile.username || 'No username'}</p>
                     <div className="flex flex-wrap gap-2">
                       <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                         userProfile.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -501,6 +601,20 @@ const ProfilePage = () => {
                           <MdClose className="mr-2" />
                           Cancel
                         </button>
+                        {/* Debug buttons - uncomment for debugging
+                        <button
+                          onClick={debugProfileState}
+                          className="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-medium rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
+                        >
+                          🐛 Debug
+                        </button>
+                        <button
+                          onClick={testApiCall}
+                          className="inline-flex items-center px-4 py-2 border border-purple-300 text-sm font-medium rounded-lg text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors shadow-sm"
+                        >
+                          🧪 Test API
+                        </button>
+                        */}
                       </div>
                     )}
                   </div>
@@ -534,7 +648,7 @@ const ProfilePage = () => {
                 ) : (
                   <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                     <FaUser className="text-gray-400 mr-3" />
-                    <span className="text-gray-900">{userProfile.name}</span>
+                    <span className="text-gray-900">{userProfile.name || 'No name provided'}</span>
                   </div>
                 )}
               </div>
@@ -554,7 +668,7 @@ const ProfilePage = () => {
                 ) : (
                   <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                     <FaUserTag className="text-gray-400 mr-3" />
-                    <span className="text-gray-900">@{userProfile.username}</span>
+                    <span className="text-gray-900">@{userProfile.username || 'No username'}</span>
                   </div>
                 )}
               </div>
@@ -565,7 +679,7 @@ const ProfilePage = () => {
                 </label>
                 <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                   <FaEnvelope className="text-gray-400 mr-3" />
-                  <span className="text-gray-900">{userProfile.email}</span>
+                  <span className="text-gray-900">{userProfile.email || 'No email provided'}</span>
                   {userProfile.email_verified_at && (
                     <MdVerified className="text-green-500 ml-2" title="Email Verified" />
                   )}
@@ -587,7 +701,7 @@ const ProfilePage = () => {
                 ) : (
                   <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                     <FaPhone className="text-gray-400 mr-3" />
-                    <span className="text-gray-900">{userProfile.mobile}</span>
+                    <span className="text-gray-900">{userProfile.mobile || 'No mobile number'}</span>
                   </div>
                 )}
               </div>

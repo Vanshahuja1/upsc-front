@@ -123,7 +123,7 @@ const page = async ({ params }: { params: Promise<{ courseId: string }> }) => {
                   dangerouslySetInnerHTML={{
                     __html: convertYouTubeLinksToIframe(
                       courseData?.content || ""
-                    ),
+                    ) as string,
                   }}
                 ></div>
               </section>
@@ -134,7 +134,7 @@ const page = async ({ params }: { params: Promise<{ courseId: string }> }) => {
                   dangerouslySetInnerHTML={{
                     __html: convertYouTubeLinksToIframe(
                       courseData?.extra_content || ""
-                    ),
+                    ) as string,
                   }}
                 ></div>
               </section>
