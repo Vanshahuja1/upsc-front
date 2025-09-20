@@ -165,7 +165,7 @@ const CourseEnrollCard: React.FC<CourseEnrollCardProps> = ({
         <div className="relative h-64 w-full">
           <Image
             src={image ?? "/images/placeholder.png"}
-            alt="Course prep materials"
+            alt={heading ? `${heading} course image` : "Course image"}
             fill
             className="object-cover"
           />

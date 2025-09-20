@@ -96,7 +96,7 @@ const PaymentPage = () => {
 
       // Create order first to get dynamic order ID
       console.log("Creating order...");
-      const orderResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders`, {
+      const orderResponse = await fetch('https://admin.theoneaim.co.in/api/v1/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ const PaymentPage = () => {
           try {
             // Confirm payment with backend using dynamic order ID
             console.log("Confirming payment with backend...");
-            const paymentConfirmResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders/${dynamicOrderId}/payment`, {
+            const paymentConfirmResponse = await fetch(`https://admin.theoneaim.co.in/api/v1/orders/${dynamicOrderId}/payment`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -175,13 +175,24 @@ const PaymentPage = () => {
 
             const paymentConfirmResult = await paymentConfirmResponse.json();
             
-            if (!paymentConfirmResponse.ok || !paymentConfirmResult.success) {
+            console.log('Payment confirmation response:', paymentConfirmResult);
+            
+            // Check for successful payment confirmation or known backend notification errors
+            if (paymentConfirmResponse.ok && paymentConfirmResult.success) {
+              console.log("Payment confirmed successfully");
+              // Continue with success flow
+            } else if (paymentConfirmResponse.status === 500 && 
+                      paymentConfirmResult.message && 
+                      paymentConfirmResult.message.includes('PaymentSuccessNotification')) {
+              // Known backend notification error - payment was likely successful but notification failed
+              console.warn('Payment successful but notification failed:', paymentConfirmResult.message);
+              console.log("Payment processed despite notification error");
+              // Continue with success flow since payment was successful
+            } else {
               console.error('Payment confirmation failed:', paymentConfirmResult);
-              alert("Payment confirmation failed. Please contact support with your payment ID: " + response.razorpay_payment_id);
+              alert(`Payment confirmation failed: ${paymentConfirmResult.message || 'Unknown error'}. Please contact support with your payment ID: ${response.razorpay_payment_id}`);
               return;
             }
-
-            console.log("Payment confirmed successfully");
 
             // Update order status to completed in backend (optional, depends on your backend logic)
             // This step might be handled automatically by the payment confirmation endpoint

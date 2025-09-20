@@ -23,10 +23,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, {
+      const response = await fetch('https://admin.theoneaim.co.in/api/v1/auth/login', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json",
+          "x-api-key": "ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5",
         },
         body: JSON.stringify({
           email,
