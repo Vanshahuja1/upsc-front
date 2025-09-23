@@ -24,11 +24,32 @@ const Cart = () => {
     coupanData: Discount
   ) => {
     try {
-      const data = await fetchData<Discount>(`/promos/${coupanData.code}`);
+      const response = await fetch('https://admin.theoneaim.co.in/api/v1/promos/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'x-api-key': 'ak_y6d4lk60QIrkdu23knAdJLeyabdEerT5',
+        },
+        body: JSON.stringify({
+          code: coupanData.code
+        }),
+      });
 
-      applyCoupon(data as Discount); // Use applyCoupon action from store
-      toast.success("Coupon Applied Successfully");
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        // Apply the coupon with the correct structure
+        applyCoupon({
+          code: data.promo.code,
+          percentage: data.promo.percentage
+        } as Discount);
+        toast.success("Coupon Applied Successfully");
+      } else {
+        toast.error("Invalid Coupon Code");
+      }
     } catch (err) {
+      console.error('Coupon validation error:', err);
       toast.error("Invalid Coupon Code");
     } finally {
       reset();
@@ -207,23 +228,44 @@ const Cart = () => {
 
                   <div className="mt-4 relative z-40">
                     <div className="h-10 border-t border-dashed border-white opacity-30 my-3"></div>
-                    <input
-                      type="text"
-                      className="w-full p-2 rounded-md text-black text-sm"
-                      placeholder="Enter your Coupon Code here"
-                      {...register("code", {
-                        required: "Coupon code is required",
-                        minLength: {
-                          value: 3,
-                          message: "Coupon code must be at least 3 characters",
-                        },
-                      })}
-                    />
-                    <div className="flex justify-center">
-                      <PButton onClick={handleSubmit(handleCoupon)}>
-                        Apply here
-                      </PButton>
-                    </div>
+                    
+                    {/* Show applied coupon or input field */}
+                    {coupon.code ? (
+                      <div className="bg-white bg-opacity-20 rounded-md p-3 mb-3">
+                        <div className="flex justify-between items-center text-white">
+                          <div>
+                            <p className="text-sm font-semibold">Applied: {coupon.code}</p>
+                            <p className="text-xs">Save {coupon.percentage}%</p>
+                          </div>
+                          <button
+                            onClick={() => applyCoupon({ code: "", percentage: 0 } as Discount)}
+                            className="text-white hover:text-red-200 text-sm underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          className="w-full p-2 rounded-md text-black text-sm"
+                          placeholder="Enter your Coupon Code here"
+                          {...register("code", {
+                            required: "Coupon code is required",
+                            minLength: {
+                              value: 3,
+                              message: "Coupon code must be at least 3 characters",
+                            },
+                          })}
+                        />
+                        <div className="flex justify-center">
+                          <PButton onClick={handleSubmit(handleCoupon)}>
+                            Apply here
+                          </PButton>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   <div className="absolute z-10 left-0 bottom-0">
@@ -247,8 +289,12 @@ const Cart = () => {
                     </div>
 
                     <div className="flex justify-between">
-                      <span>Discount (if any)</span>
-                      <span>₹{priceDetails.discount.toFixed(2)}</span>
+                      <span>
+                        Discount {coupon.code ? `(${coupon.code})` : "(if any)"}
+                      </span>
+                      <span className={priceDetails.discount > 0 ? "text-green-600" : ""}>
+                        -₹{priceDetails.discount.toFixed(2)}
+                      </span>
                     </div>
 
                     {/* <div className="flex justify-between">
